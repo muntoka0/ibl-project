@@ -126,30 +126,6 @@ psytrack
 jupyter
 ```
 
-If you are using Anaconda, install into the active environment with:
-
-```bash
-python -m pip install ONE-api ibllib numpy pandas matplotlib seaborn scipy scikit-learn statsmodels psytrack jupyter
-```
-
-If Jupyter says `ModuleNotFoundError` even after installing a package, install into the notebook kernel itself:
-
-```python
-import sys
-!{sys.executable} -m pip install psytrack
-```
-
-For Q9, `IBL_behavior_dataQ9_3.ipynb` already includes a kernel-aware PsyTrack import/install cell.
-
-## Running order
-
-The notebooks are cumulative. A safe order is:
-
-```text
-Q1 -> Q2 -> Q3 -> Q4 -> Q5 -> Q8_2 -> Q9_3 -> Q10/final project
-```
-
-Several later notebooks contain copied earlier cells, so they can often run as standalone notebooks from top to bottom. If a later notebook has missing variables, run the earlier preprocessing/model cells in the same notebook first.
 
 ## Data notes
 
