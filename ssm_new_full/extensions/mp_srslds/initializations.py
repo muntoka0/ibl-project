@@ -1,0 +1,2 @@
+def initialize(*args, **kwargs):
+    raise NotImplementedError("mp_srslds extensions are outside the ssm_new_full GLM-HMM subset.")

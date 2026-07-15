@@ -1,0 +1,257 @@
+
+
+## `ssm_new_full`: Python 3.11 GLM-HMM Package
+
+`ssm_new_full` is a small Python 3.11-compatible package written for this project.
+
+The original `ssm` package did not work in this environment because part of it was compiled for Python 3.10.  
+So `ssm_new_full` rewrites the **GLM-HMM parts** needed for Q8/Q9.
+
+It is not the full original `ssm` package.  
+It supports the binary-choice GLM-HMM used in this behavior project.
+
+---
+
+## Why We Need `ssm_new_full`
+
+The project needs a model that can describe different hidden behavioral strategies.
+
+A normal logistic regression assumes one fixed strategy:
+
+```text
+choice ~ contrast + previous choice + previous reward
+```
+
+But a GLM-HMM allows multiple hidden states:
+
+```text
+state 0: one logistic regression
+state 1: another logistic regression
+state 2: another logistic regression
+```
+
+This is useful because mouse behavior may switch between:
+
+```text
+engaged sensory state
+current-rule exploit state
+old-rule perseverative state
+exploratory/lapse state
+disengaged state
+```
+
+So `ssm_new_full` lets us estimate:
+
+```text
+hidden state probabilities
+state-specific logistic regression weights
+transition probabilities between states
+```
+
+---
+
+## Files Grouped By Model Role
+
+### 1. Main Model Controller
+
+```text
+hmm.py
+```
+
+This file contains the main `HMM` class.
+
+It controls the whole GLM-HMM algorithm:
+
+```python
+model.fit(...)
+model.expected_states(...)
+model.most_likely_states(...)
+```
+
+It connects all other files together.
+
+---
+
+### 2. Observation Model: GLM / Logistic Regression
+
+```text
+observations.py
+optimizers.py
+```
+
+These files describe how choices are generated inside each hidden state.
+
+For each hidden state, the model fits a logistic regression:
+
+```text
+P(choice = 1) = sigmoid(inputs @ state_weights)
+```
+
+`observations.py` computes choice likelihoods.
+
+`optimizers.py` fits weighted logistic regressions during the M-step.
+
+---
+
+### 3. Hidden State Dynamics
+
+```text
+transitions.py
+init_state_distns.py
+```
+
+These files describe how hidden states evolve over trials.
+
+`transitions.py` stores and updates the transition matrix:
+
+```text
+P(next_state | current_state)
+```
+
+`init_state_distns.py` stores and updates the probability of the first hidden state in a session.
+
+---
+
+### 4. Inference / E-step
+
+```text
+messages.py
+```
+
+This file performs the E-step using the forward-backward algorithm.
+
+It estimates:
+
+```text
+P(hidden_state = k at trial t | all choices)
+```
+
+This is how the model infers hidden states.
+
+---
+
+### 5. Math Helpers
+
+```text
+util.py
+stats.py
+primitives.py
+```
+
+These files contain helper functions for stable probability calculations.
+
+Examples:
+
+```text
+sigmoid
+logsumexp
+normalization
+HMM normalizer
+```
+
+They help avoid numerical problems like `log(0)` or underflow.
+
+---
+
+### 6. Compatibility Helpers
+
+```text
+regression.py
+model_selection.py
+plots.py
+preprocessing.py
+hierarchical.py
+```
+
+These files are partially implemented helpers.
+
+They are included so the package structure is closer to the original `ssm`, and so simple helper imports do not fail.
+
+They are not full copies of the original package.
+
+---
+
+### 7. Placeholders Only
+
+```text
+lds.py
+emissions.py
+variational.py
+extensions/
+```
+
+These files are placeholders.
+
+They are included for package structure, but their full functionality is not implemented.
+
+They are not needed for the binary-choice GLM-HMM used in this project.
+
+---
+
+## Methods Used
+
+The GLM-HMM uses the EM algorithm.
+
+### E-step
+
+The model infers hidden state probabilities using forward-backward:
+
+```text
+messages.py
+```
+
+Output:
+
+```text
+posterior state probabilities
+expected state transitions
+log likelihood
+```
+
+### M-step
+
+The model updates parameters:
+
+```text
+init_state_distns.py -> initial state probabilities
+transitions.py       -> transition matrix
+observations.py      -> state-specific GLM weights
+optimizers.py        -> weighted logistic regression
+```
+
+This repeats until the model stops improving.
+
+---
+
+## What This Package Supports
+
+`ssm_new_full` supports:
+
+```text
+binary choices: 0/1
+D = 1
+C = 2
+observations = "input_driven_obs"
+method = "em"
+GLM-HMM with state-specific logistic regression weights
+hidden state inference
+transition matrix estimation
+```
+
+Example:
+
+```python
+import ssm_new_full as ssm
+
+model = ssm.HMM(
+    K=3,
+    D=1,
+    M=3,
+    observations="input_driven_obs",
+    observation_kwargs={"C": 2}
+)
+
+model.fit(choices, inputs=inputs, method="em", num_iters=100)
+posterior_probs = model.expected_states(choices, input=inputs)[0]
+states = model.most_likely_states(choices, input=inputs)
+```
